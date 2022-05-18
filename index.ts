@@ -1,10 +1,10 @@
 
 import { execa } from "execa";
-import log from "loglevel";
+import winston from "winston";
 
 interface Workload {
   name: string;
-  cmd: string;
+  cmd: string[];
 }
 
 interface PerfEventNamed {
@@ -47,6 +47,27 @@ function perfEventToEventSelector(src: PerfEvent): string {
 // 257946046,,branches,0.02%,318266377,100.00,808.561,M/sec
 // 7054000,,branch-misses,0.08%,318266377,100.00,2.73,of all branches
 
+const log = winston.createLogger({
+  level: "info",
+  format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.timestamp({
+          format: 'YYYY-MM-DD HH:mm:ss'
+        }),
+        winston.format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`),
+      ),
+    }),
+  ],
+});
+
+function formatArgsArray(src: string[]) {
+  // TODO: escape
+  return src.map((str) => `"${str}"`).join(" ");
+}
+
 async function run(config: GatherConfig) {
   log.info("PREPROCESSING");
 
@@ -67,15 +88,13 @@ async function run(config: GatherConfig) {
     });
   }
 
-  const prefix = `perf stat -x, -r ${config.repetition} ${config.extraParams} -e `;
-
-  for (const workload of config.workloads) {
-    log.info(`WORKLOAD ${workload.name} (${workload.cmd})`);
+  for (const workload of cfg.workloads) {
+    log.info(`WORKLOAD ${workload.name} (${formatArgsArray(workload.cmd)})`);
     for (const eventGroup of eventGroups) {
       log.info(`WORKLOAD ${workload.name} => EVENT group ${eventGroup._name}`);
-      const cmdline = `${prefix}${eventGroup._selectorArg} ${workload.cmd}`;
-      log.info("CMD", cmdline);
-      const exec = await execa(cmdline);
+      const args = ["stat", "-x,", "-r", cfg.repetition.toString(), ... cfg.extraParams, "-e", eventGroup._selectorArg, ... workload.cmd];
+      log.info(`CMD /usr/bin/perf ${formatArgsArray(args)}`);
+      const exec = await execa("perf", args);
     }
   }
 }
@@ -83,8 +102,12 @@ async function run(config: GatherConfig) {
 run({
   workloads: [
     {
+      name: "PythonHelloWorld",
+      cmd: ["/usr/bin/python", "-c", "print(\"Hello World!\")"],
+    },
+    {
       name: "PythonSieveOneliner",
-      cmd: "python -c \"list((i for i in range(2,5120) if i not in [j*k for j in range(2,int(i/2)+1) for k in range(2,min(j+1,int(i/j)+1))]))\"",
+      cmd: ["/usr/bin/python", "-c", "list((i for i in range(2,5120) if i not in [j*k for j in range(2,int(i/2)+1) for k in range(2,min(j+1,int(i/j)+1))]))"],
     },
   ],
   events: [

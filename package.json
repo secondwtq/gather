@@ -14,7 +14,7 @@
   "dependencies": {
     "@types/node": "^17.0.34",
     "execa": "^6.1.0",
-    "loglevel": "^1.8.0"
+    "winston": "^3.7.2"
   },
   "devDependencies": {
     "typescript": "^4.6.4"
