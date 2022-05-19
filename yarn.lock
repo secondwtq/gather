@@ -23,10 +23,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^17.0.34":
+"@types/node@npm:*, @types/node@npm:^17.0.34":
   version: 17.0.34
   resolution: "@types/node@npm:17.0.34"
   checksum: eb9a640ab85b62e8f7b9db1f19b674cc4ff49b94d55085ab6c28c997dbe90356631c4df484fe686082c938bfc6fb02c9e85eb805d1415dfe6de7e31f47a09a70
+  languageName: node
+  linkType: hard
+
+"@types/papaparse@npm:^5":
+  version: 5.3.2
+  resolution: "@types/papaparse@npm:5.3.2"
+  dependencies:
+    "@types/node": "*"
+  checksum: e8f7f5c251a952b97507cc89e76f69b67876a771b23827013701f6b9c6d9a062a75a2925e7f9ad68f063aad8f98089c76187e22223fa35dffa02283bd8665b96
   languageName: node
   linkType: hard
 
@@ -144,7 +153,9 @@ __metadata:
   resolution: "gather@workspace:."
   dependencies:
     "@types/node": ^17.0.34
+    "@types/papaparse": ^5
     execa: ^6.1.0
+    papaparse: ^5.3.2
     typescript: ^4.6.4
     winston: ^3.7.2
   languageName: unknown
@@ -264,6 +275,13 @@ __metadata:
   dependencies:
     mimic-fn: ^4.0.0
   checksum: 0846ce78e440841335d4e9182ef69d5762e9f38aa7499b19f42ea1c4cd40f0b4446094c455c713f9adac3f4ae86f613bb5e30c99e52652764d06a89f709b3788
+  languageName: node
+  linkType: hard
+
+"papaparse@npm:^5.3.2":
+  version: 5.3.2
+  resolution: "papaparse@npm:5.3.2"
+  checksum: a5950ef931a42f6759a8d3823a43dd30f375b37a0ddea6ea5448c0c5024cd226819231958c49c24fbcdeab297c63fd1d630130b3439876ea0fd17d8a267738ae
   languageName: node
   linkType: hard
 
