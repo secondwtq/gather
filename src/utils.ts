@@ -28,3 +28,8 @@ export function *genPermutations(count: number): Generator<number[]> {
 export function sleep(ms: number): Promise<void> {
   return new Promise((r) => { setTimeout(r, ms) });
 }
+
+export async function infiniteLoop(): Promise<void> {
+  while (true)
+    await sleep(1000);
+}

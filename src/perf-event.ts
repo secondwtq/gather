@@ -13,3 +13,10 @@ export function perfEventToEventSelector(src: PerfEvent): string {
       return src.eventName;
   }
 }
+
+export function perfEventToHumanName(src: PerfEvent): string {
+  switch (src.kind) {
+    case "named":
+      return src.eventName;
+  }
+}

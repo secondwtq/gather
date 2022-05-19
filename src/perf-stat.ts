@@ -16,13 +16,13 @@ const defaultPerfStatParams = {
   extraParams: [],
 };
 
-export interface PerfStateResult {
+export interface PerfStatResult {
   // in ms
   time: number;
-  events: PerfStateResultEvent[];
+  events: PerfStatResultEvent[];
 }
 
-export interface PerfStateResultEvent {
+export interface PerfStatResultEvent {
   event: PerfEvent,
   // Note double value is not good for ints larger than Number.MAX_SAFE_INTEGER
   // which is about 9000 T
@@ -42,7 +42,7 @@ export interface PerfStateResultEvent {
 export async function runPerfStat(
     cmd: string[],
     events: PerfEvent[],
-    params: PerfStatParams = { }): Promise<PerfStateResult> {
+    params: PerfStatParams = { }): Promise<PerfStatResult> {
   const paramsCanon = { ... defaultPerfStatParams, ... params };
   const args = ["stat", "-x,", "-r", paramsCanon.repetition.toString(), ... paramsCanon.extraParams, "-e", events.map(perfEventToEventSelector).join(","), ... cmd];
   log.info(`CMD perf ${prettifyArgsArray(args)}`);
