@@ -6,23 +6,23 @@ import { prettifyArgsArray } from "./utils.js";
 import { hrtime } from "process";
 import Papa from "papaparse";
 
-export interface PerfStatParams {
+export interface Params {
   repetition?: number;
   extraParams?: string[];
 }
 
-const defaultPerfStatParams = {
+const defaultParams = {
   repetition: 3,
   extraParams: [],
 };
 
-export interface PerfStatResult {
+export interface Result {
   // in ms
   time: number;
-  events: PerfStatResultEvent[];
+  events: ResultEvent[];
 }
 
-export interface PerfStatResultEvent {
+export interface ResultEvent {
   event: PerfEvent,
   // Note double value is not good for ints larger than Number.MAX_SAFE_INTEGER
   // which is about 9000 T
@@ -39,11 +39,11 @@ export interface PerfStatResultEvent {
 // 1357264067,,instructions,0.02%,318266377,100.00,1.07,insn per cycle
 // 257946046,,branches,0.02%,318266377,100.00,808.561,M/sec
 // 7054000,,branch-misses,0.08%,318266377,100.00,2.73,of all branches
-export async function runPerfStat(
+export async function run(
     cmd: string[],
     events: PerfEvent[],
-    params: PerfStatParams = { }): Promise<PerfStatResult> {
-  const paramsCanon = { ... defaultPerfStatParams, ... params };
+    params: Params = { }): Promise<Result> {
+  const paramsCanon = { ... defaultParams, ... params };
   const args = ["stat", "-x,", "-r", paramsCanon.repetition.toString(), ... paramsCanon.extraParams, "-e", events.map(perfEventToEventSelector).join(","), ... cmd];
   log.info(`CMD perf ${prettifyArgsArray(args)}`);
   const startTime = hrtime.bigint();

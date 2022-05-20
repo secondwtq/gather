@@ -1,3 +1,4 @@
+import { readSync } from "fs";
 
 export function prettifyArgsArray(src: string[]) {
   // TODO: escape
@@ -32,4 +33,15 @@ export function sleep(ms: number): Promise<void> {
 export async function infiniteLoop(): Promise<void> {
   while (true)
     await sleep(1000);
+}
+
+export function average(src: number[]): number {
+  return src.reduce((x, y) => x + y) / src.length;
+}
+
+export async function asyncMapSequence<X, Y>(f: (src: X) => Promise<Y>, src: X[]): Promise<Y[]> {
+  const ret: Y[] = [];
+  for (const x of src)
+    ret.push(await f(x));
+  return ret;
 }
