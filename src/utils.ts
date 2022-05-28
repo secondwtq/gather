@@ -45,3 +45,18 @@ export async function asyncMapSequence<X, Y>(f: (src: X) => Promise<Y>, src: X[]
     ret.push(await f(x));
   return ret;
 }
+
+export function *enumKeys<T extends object>(enumObj: T): Generator<keyof T> {
+  for (const maybeKey in enumObj)
+    if (Number.isNaN(+maybeKey))
+      yield maybeKey as (keyof T);
+}
+
+export function *enumValues<T extends object>(enumObj: T): Generator<T[keyof T]> {
+  for (const key of enumKeys(enumObj))
+    yield enumObj[key];
+}
+
+export function unreachable(): any {
+  throw new Error("Unreacable");
+}

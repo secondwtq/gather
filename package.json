@@ -7,17 +7,22 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc; $npm_execpath run build-tma-parser",
+    "build-tma-parser": "nearleyc src/PerfEventDB/TMA/IntelTMAExprParserRules.nearley -o build/PerfEventDB/TMA/IntelTMAExprParserRules.common.js && yarn node transform-nearley.js"
   },
   "keywords": [],
   "author": "",
   "dependencies": {
     "@types/node": "^17.0.34",
+    "cjstoesm": "^1.1.5",
     "execa": "^6.1.0",
+    "nearley": "^2.20.1",
+    "node-fetch": "^3.2.4",
     "papaparse": "^5.3.2",
     "winston": "^3.7.2"
   },
   "devDependencies": {
+    "@types/nearley": "^2",
     "@types/papaparse": "^5",
     "typescript": "^4.6.4"
   }

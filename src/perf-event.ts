@@ -1,7 +1,10 @@
 
+export enum Kind {
+  Named = "named",
+}
 
 export interface PerfEventNamed {
-  kind: "named";
+  kind: Kind.Named;
   eventName: string;
 }
 
@@ -9,14 +12,14 @@ export type PerfEvent = PerfEventNamed;
 
 export function perfEventToEventSelector(src: PerfEvent): string {
   switch (src.kind) {
-    case "named":
+    case Kind.Named:
       return src.eventName;
   }
 }
 
 export function perfEventToHumanName(src: PerfEvent): string {
   switch (src.kind) {
-    case "named":
+    case Kind.Named:
       return src.eventName;
   }
 }

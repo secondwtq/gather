@@ -1,5 +1,5 @@
 
-import { PerfEventNamed } from "./perf-event.js";
+import { Kind, PerfEventNamed } from "./perf-event.js";
 import { run, defaultParams, createEventGroups } from "./perf-stat-demux.js";
 import { asyncMapSequence } from "./utils.js";
 
@@ -15,16 +15,16 @@ const WORKLOADS = [
 ];
 
 const EVENTS: PerfEventNamed[] = [
-  { kind: "named", eventName: "cycles" },
-  { kind: "named", eventName: "instructions" },
-  { kind: "named", eventName: "Br_Inst_Retired.All_Branches" },
-  { kind: "named", eventName: "Br_Misp_Retired.All_Branches" },
-  { kind: "named", eventName: "Br_Misp_Retired.All_Branches" },
-  { kind: "named", eventName: "Br_Inst_Retired.Near_Call" },
-  { kind: "named", eventName: "Frontend_Retired.DSB_Miss" },
-  { kind: "named", eventName: "IDQ.DSB_Cycles" },
-  { kind: "named", eventName: "IDQ.MITE_Cycles" },
-  { kind: "named", eventName: "IDQ.MS_Cycles" },
+  { kind: Kind.Named, eventName: "cycles" },
+  { kind: Kind.Named, eventName: "instructions" },
+  { kind: Kind.Named, eventName: "Br_Inst_Retired.All_Branches" },
+  { kind: Kind.Named, eventName: "Br_Misp_Retired.All_Branches" },
+  { kind: Kind.Named, eventName: "Br_Misp_Retired.All_Branches" },
+  { kind: Kind.Named, eventName: "Br_Inst_Retired.Near_Call" },
+  { kind: Kind.Named, eventName: "Frontend_Retired.DSB_Miss" },
+  { kind: Kind.Named, eventName: "IDQ.DSB_Cycles" },
+  { kind: Kind.Named, eventName: "IDQ.MITE_Cycles" },
+  { kind: Kind.Named, eventName: "IDQ.MS_Cycles" },
 ];
 
 (async () => {
