@@ -28,8 +28,13 @@ export abstract class Base {
 }
 
 export class DerivedDef extends Base {
-  constructor(public kind: Kind, public name: string, public expression: Base, public parent?: DerivedDef) {
+  children: DerivedDef[];
+
+  constructor(public kind: Kind, public name: string, public expression: Base, public readonly parent?: DerivedDef) {
     super();
+    this.children = [];
+    if (parent)
+      parent.children.push(this);
   }
 
   getLevel(): number | null {

@@ -3,7 +3,7 @@ import { enumValues } from "../../utils.js";
 import { CoreID } from "../Intel/Common.js";
 import { Kind, DerivedDef, Placeholder } from "./ASTNode.js";
 import parseExpression from "./IntelTMAExprParser.js";
-import { ToStringFullVisitor } from "./Visitors.js";
+import { CollectAllEventsVisitor, ToStringFullVisitor } from "./Visitors.js";
 
 type DerivedName = string;
 
@@ -23,13 +23,13 @@ type CoreName = string;
 type UnparsedExpression = string;
 
 const CORE_ID_NAME_MAP: Map<CoreID, CoreName> = new Map([
-  [CoreID.SKL, "KBLR/CFL/CML"],
+  // [CoreID.SKL, "KBLR/CFL/CML"],
   // [CoreID.SKX, "SKX"],
   // [CoreID.CLX, "CLX"],
   // [CoreID.ICL, "ICL"],
   // [CoreID.ICX, "ICX"],
   // [CoreID.TGL, "TGL"],
-  // [CoreID.ADL_GLC, "ADL/RPL"],
+  [CoreID.ADL_GLC, "ADL/RPL"],
   // [CoreID.SPR, "SPR"],
 ]);
 
@@ -72,44 +72,52 @@ export function preprocess(src: string[][]) {
   populateIndex(Kind.Metric, metrics);
   populateIndex(Kind.Auxiliary, auxiliaries);
 
-  const numColumn = src[0].length;
-  const numCores = numColumn - 7 - 5;
-  const coreNames = src[2].slice(5, 5 + numCores);
-
-  function propagateAndExtractExpressions(rows: string[][]): UnparsedExpression[][] {
-    return rows.map((row, index) => {
-      let last = "";
-      for (let i = 5 + numCores - 1; i >= 5; i--) {
-        if (row[i] != "")
-          last = row[i];
-        row[i] = last;
-      }
-      return row.slice(5, 5 + numCores);
-    });
-  }
-
-  const expressionMatrices = new Map([
-    [Kind.Node, propagateAndExtractExpressions(nodes)],
-    [Kind.Metric, propagateAndExtractExpressions(metrics)],
-    [Kind.Auxiliary, propagateAndExtractExpressions(auxiliaries)],
-  ]);
-
   const expressionIndex = new Map<CoreID, Map<DerivedName, UnparsedExpression>>();
 
-  function getExpressionIndexForCore(coreIdx: number) {
-    assert(coreIdx >= 0);
-    const ret = new Map<DerivedName, UnparsedExpression>();
-    for (const name of orderedNodeNames) {
-      const meta = metaIndex.get(name)!;
-      ret.set(name, expressionMatrices.get(meta.kind)![meta.index][coreIdx]);
+  {
+    const numColumn = src[0].length;
+    const numCores = numColumn - 7 - 5;
+    const coreNames = src[2].slice(5, 5 + numCores);
+    const getIsServer = src[1].map((cell) => cell == "Server");
+    function propagateAndExtractExpressions(rows: string[][]): UnparsedExpression[][] {
+      return rows.map((row, index) => {
+        let last = "";
+        let lastNonServer = "";
+        for (let i = 5 + numCores - 1; i >= 5; i--) {
+          const isServer = getIsServer[i];
+          if (row[i] != "") {
+            last = row[i];
+            if (!isServer)
+              lastNonServer = row[i];
+          } else {
+            row[i] = isServer ? last : lastNonServer;
+          }
+        }
+        return row.slice(5, 5 + numCores);
+      });
     }
-    return ret;
+
+    const expressionMatrices = new Map([
+      [Kind.Node, propagateAndExtractExpressions(nodes)],
+      [Kind.Metric, propagateAndExtractExpressions(metrics)],
+      [Kind.Auxiliary, propagateAndExtractExpressions(auxiliaries)],
+    ]);
+
+    function getExpressionIndexForCore(coreIdx: number) {
+      assert(coreIdx >= 0);
+      const ret = new Map<DerivedName, UnparsedExpression>();
+      for (const name of orderedNodeNames) {
+        const meta = metaIndex.get(name)!;
+        ret.set(name, expressionMatrices.get(meta.kind)![meta.index][coreIdx]);
+      }
+      return ret;
+    }
+
+    for (const [coreID, coreName] of CORE_ID_NAME_MAP)
+      expressionIndex.set(coreID, getExpressionIndexForCore(coreNames.indexOf(coreName)));
+
+    console.log(expressionIndex);
   }
-
-  for (const [coreID, coreName] of CORE_ID_NAME_MAP)
-    expressionIndex.set(coreID, getExpressionIndexForCore(coreNames.indexOf(coreName)));
-
-  console.log(expressionIndex);
 
   function parseForCore(coreID: CoreID): Map<string, DerivedDef> {
     const derives = new Map<string, DerivedDef>();
@@ -122,10 +130,14 @@ export function preprocess(src: string[][]) {
     }
     for (const [name, derived] of derives)
       derives.get(name)!.expression = parseExpression({ derives }, unparsed.get(name)!);
+    const eventCollector = new CollectAllEventsVisitor();
     for (const [name, derived] of derives) {
-      console.log(name, " => ", derived.toString());
+      console.log(name, "=>", derived.toString());
+      console.log(unparsed.get(name));
       console.log("Full: ", derived.accept(new ToStringFullVisitor()));
+      derived.accept(eventCollector);
     }
+    console.log(eventCollector.getResult());
 
     return derives;
   }

@@ -67,7 +67,6 @@ function transformParserAST(context: ParseContext, node: BaseNode): Base {
 }
 
 export default function parseExpression(context: ParseContext, src: string): Base {
-  console.log(src);
   const parserAST = parseExpressionToParserAST(src);
   const ast = transformParserAST(context, parserAST);
   return ast;

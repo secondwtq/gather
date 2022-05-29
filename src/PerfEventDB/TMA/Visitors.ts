@@ -89,3 +89,45 @@ class EvaluationVisitor implements NodeVisitor<number> {
     return unreachable();
   }
 }
+
+export class CollectAllEventsVisitor implements NodeVisitor<void> {
+
+  result: Set<string>;
+
+  constructor() {
+    this.result = new Set();
+  }
+
+  getResult(): Set<string> {
+    return this.result;
+  }
+
+  derivedDef(node: DerivedDef): void {
+    return node.expression.accept(this);
+  }
+
+  derivedUse(node: DerivedUse): void {
+    return node.def.accept(this);
+  }
+
+  rawEvent(node: RawEvent): void {
+    this.result.add(node.eventName + node.annotations.map((annotation) =>
+      ":" + annotation).join(""));
+  }
+
+  operation(node: Operation): void {
+    return node.operands.forEach((operand) => operand.accept(this));
+  }
+
+  constant(node: Constant): void {
+    return;
+  }
+
+  placeholder(node: Placeholder): void {
+    return;
+  }
+
+  empty(node: Empty): void {
+    return;
+  }
+}
