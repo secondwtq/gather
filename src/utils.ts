@@ -58,5 +58,5 @@ export function *enumValues<T extends object>(enumObj: T): Generator<T[keyof T]>
 }
 
 export function unreachable(): any {
-  throw new Error("Unreacable");
+  throw new Error("Unreachable");
 }

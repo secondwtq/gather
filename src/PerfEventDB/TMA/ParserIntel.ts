@@ -1,8 +1,9 @@
 import assert from "assert";
 import { enumValues } from "../../utils.js";
 import { CoreID } from "../Intel/Common.js";
-import { Kind, Derived, Placeholder } from "./ASTNode.js";
+import { Kind, DerivedDef, Placeholder } from "./ASTNode.js";
 import parseExpression from "./IntelTMAExprParser.js";
+import { ToStringFullVisitor } from "./Visitors.js";
 
 type DerivedName = string;
 
@@ -23,13 +24,13 @@ type UnparsedExpression = string;
 
 const CORE_ID_NAME_MAP: Map<CoreID, CoreName> = new Map([
   [CoreID.SKL, "KBLR/CFL/CML"],
-  [CoreID.SKX, "SKX"],
-  [CoreID.CLX, "CLX"],
-  [CoreID.ICL, "ICL"],
-  [CoreID.ICX, "ICX"],
-  [CoreID.TGL, "TGL"],
-  [CoreID.ADL_GLC, "ADL/RPL"],
-  [CoreID.SPR, "SPR"],
+  // [CoreID.SKX, "SKX"],
+  // [CoreID.CLX, "CLX"],
+  // [CoreID.ICL, "ICL"],
+  // [CoreID.ICX, "ICX"],
+  // [CoreID.TGL, "TGL"],
+  // [CoreID.ADL_GLC, "ADL/RPL"],
+  // [CoreID.SPR, "SPR"],
 ]);
 
 export function preprocess(src: string[][]) {
@@ -110,17 +111,20 @@ export function preprocess(src: string[][]) {
 
   console.log(expressionIndex);
 
-  function parseForCore(coreID: CoreID): Map<string, Derived> {
-    const derives = new Map<string, Derived>();
+  function parseForCore(coreID: CoreID): Map<string, DerivedDef> {
+    const derives = new Map<string, DerivedDef>();
     const unparsed = expressionIndex.get(coreID)!;
 
     for (const [name, _] of unparsed) {
       const meta = metaIndex.get(name)!;
       const parent = meta.parentName ? derives.get(meta.parentName) : undefined;
-      derives.set(name, new Derived(metaIndex.get(name)?.kind!, name, new Placeholder(), parent));
+      derives.set(name, new DerivedDef(metaIndex.get(name)?.kind!, name, new Placeholder(), parent));
     }
+    for (const [name, derived] of derives)
+      derives.get(name)!.expression = parseExpression({ derives }, unparsed.get(name)!);
     for (const [name, derived] of derives) {
-      parseExpression(unparsed.get(name)!);
+      console.log(name, " => ", derived.toString());
+      console.log("Full: ", derived.accept(new ToStringFullVisitor()));
     }
 
     return derives;

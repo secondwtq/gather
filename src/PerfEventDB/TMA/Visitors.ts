@@ -1,11 +1,15 @@
 
 import { assert } from "console";
 import { unreachable } from "../../utils.js";
-import { NodeVisitor, Derived, Operation, Constant, Placeholder, RawEvent, Operator } from "./ASTNode.js";
+import { NodeVisitor, DerivedDef, DerivedUse, Operation, Constant, Placeholder, RawEvent, Operator, Empty } from "./ASTNode.js";
 
-class ToStringFullVisitor implements NodeVisitor<string> {
-  derived(node: Derived): string {
-    return node.accept(this);
+export class ToStringFullVisitor implements NodeVisitor<string> {
+  derivedDef(node: DerivedDef): string {
+    return node.expression.accept(this);
+  }
+
+  derivedUse(node: DerivedUse): string {
+    return node.def.accept(this);
   }
 
   operation(node: Operation): string {
@@ -23,13 +27,21 @@ class ToStringFullVisitor implements NodeVisitor<string> {
   placeholder(node: Placeholder): string {
     return node.toString();
   }
+
+  empty(node: Placeholder): string {
+    return node.toString();
+  }
 }
 
 class EvaluationVisitor implements NodeVisitor<number> {
   constructor(private getEventValue: (eventName: string) => number) { }
 
-  derived(node: Derived): number {
+  derivedDef(node: DerivedDef): number {
     return node.expression.accept(this);
+  }
+
+  derivedUse(node: DerivedUse): number {
+    return node.def.accept(this);
   }
 
   operation(node: Operation): number {
@@ -42,6 +54,12 @@ class EvaluationVisitor implements NodeVisitor<number> {
         return node.operands[0].accept(this) * node.operands[1].accept(this);
       case Operator.Division:
         return node.operands[0].accept(this) / node.operands[1].accept(this);
+      case Operator.LessThan:
+        return +(node.operands[0].accept(this) < node.operands[1].accept(this));
+      case Operator.GreaterThan:
+        return +(node.operands[0].accept(this) > node.operands[1].accept(this));
+      case Operator.Equal:
+        return +(node.operands[0].accept(this) == node.operands[1].accept(this));
       case Operator.Maximum:
         return Math.max.apply(null,
           node.operands.map((operand) => operand.accept(this)));
@@ -64,6 +82,10 @@ class EvaluationVisitor implements NodeVisitor<number> {
   }
 
   placeholder(node: Placeholder): number {
+    return unreachable();
+  }
+
+  empty(node: Empty): number {
     return unreachable();
   }
 }

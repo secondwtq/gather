@@ -6,14 +6,16 @@ export enum Kind {
 }
 
 export interface NodeVisitor<TRet> {
-  derived(node: Derived): TRet;
+  derivedDef(node: DerivedDef): TRet;
+  derivedUse(node: DerivedUse): TRet;
   operation(node: Operation): TRet;
   rawEvent(node: RawEvent): TRet;
   constant(node: Constant): TRet;
   placeholder(node: Placeholder): TRet;
+  empty(node: Empty): TRet;
 }
 
-abstract class Base {
+export abstract class Base {
   annotation?: string;
   constructor() { }
 
@@ -25,8 +27,8 @@ abstract class Base {
   abstract accept<TRet>(visitor: NodeVisitor<TRet>): TRet;
 }
 
-export class Derived extends Base {
-  constructor(public kind: Kind, public name: string, public expression: Base, public parent?: Derived) {
+export class DerivedDef extends Base {
+  constructor(public kind: Kind, public name: string, public expression: Base, public parent?: DerivedDef) {
     super();
   }
 
@@ -47,7 +49,15 @@ export class Derived extends Base {
   }
 
   accept<TRet>(visitor: NodeVisitor<TRet>): TRet {
-    return visitor.derived(this);
+    return visitor.derivedDef(this);
+  }
+}
+
+export class DerivedUse extends Base {
+  constructor(public def: DerivedDef) { super(); }
+  toString(): string { return this.def.name; }
+  accept<TRet>(visitor: NodeVisitor<TRet>): TRet {
+    return visitor.derivedUse(this);
   }
 }
 
@@ -56,6 +66,9 @@ export enum Operator {
   Subtraction = "-",
   Multiplication = "*",
   Division = "/",
+  LessThan = "<",
+  GreaterThan = ">",
+  Equal = "==",
   Maximum = "max",
   Minimum = "min",
   Conditional = "cond",
@@ -79,12 +92,13 @@ export class Operation extends Base {
 }
 
 export class RawEvent extends Base {
-  constructor(public eventName: string) {
+  constructor(public eventName: string, public annotations: string[]) {
     super();
   }
 
   toString(): string {
-    return this.eventName;
+    return "~" + this.eventName + this.annotations.map((annotation) =>
+      ":" + annotation).join("");
   }
 
   accept<TRet>(visitor: NodeVisitor<TRet>): TRet {
@@ -107,12 +121,13 @@ export class Constant extends Base {
   }
 }
 
-export class Placeholder extends Base {
-  toString(): string {
-    return "<placeholder>";
-  }
+export class Empty extends Base {
+  constructor() { super(); }
+  toString(): string { return "#NA"; }
+  accept<TRet>(visitor: NodeVisitor<TRet>): TRet { return visitor.empty(this); }
+}
 
-  accept<TRet>(visitor: NodeVisitor<TRet>): TRet {
-    return visitor.placeholder(this);
-  }
+export class Placeholder extends Base {
+  toString(): string { return "<placeholder>"; }
+  accept<TRet>(visitor: NodeVisitor<TRet>): TRet { return visitor.placeholder(this); }
 }

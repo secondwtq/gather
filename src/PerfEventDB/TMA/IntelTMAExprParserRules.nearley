@@ -4,6 +4,7 @@ const Postprocessors = require("./IntelTMAExprParserPostprocessors.js");
 %}
 
 @builtin "number.ne"
+@builtin "postprocessors.ne"
 
 untrimmed_expression -> _ expression _
   {% data => data[1] %}
@@ -12,7 +13,9 @@ expression -> (
   | non_conditional_expression)
   {% data => data[0][0] %}
 
-conditional_expression -> expression _ "if" _ expression _ "else" _ non_conditional_expression
+conditional_expression ->
+    expression _ "if" _ expression _ "else" _ non_conditional_expression
+  {% data => Postprocessors.conditionalExpression(data) %}
 non_conditional_expression -> (
     binary_expression_additive
   | binary_expression_multiplicative)
@@ -54,5 +57,6 @@ constant ->
 paren ->
     "(" _ expression _ ")"
   {% data => data[2] %}
-function_call_expression -> expression "(" _ (expression (_ "," _ expression):*):? _ ")"
+function_call_expression -> identifier "(" delimited[_ expression _ , ","] ")"
+  {% data => Postprocessors.functionCallExpression(data) %}
 _ -> " ":* {% data => null %}
