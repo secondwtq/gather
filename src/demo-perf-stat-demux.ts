@@ -19,7 +19,6 @@ const EVENTS: PerfEventNamed[] = [
   { kind: Kind.Named, eventName: "instructions" },
   { kind: Kind.Named, eventName: "Br_Inst_Retired.All_Branches" },
   { kind: Kind.Named, eventName: "Br_Misp_Retired.All_Branches" },
-  { kind: Kind.Named, eventName: "Br_Misp_Retired.All_Branches" },
   { kind: Kind.Named, eventName: "Br_Inst_Retired.Near_Call" },
   { kind: Kind.Named, eventName: "Frontend_Retired.DSB_Miss" },
   { kind: Kind.Named, eventName: "IDQ.DSB_Cycles" },
