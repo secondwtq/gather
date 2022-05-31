@@ -1,4 +1,15 @@
-import { readSync } from "fs";
+
+export interface SampledValue {
+  mean: number;
+  min: number;
+  max: number;
+  numSample: number;
+  stddev?: number;
+}
+
+export interface SampledValueOrdered {
+  rawValues: number[];
+}
 
 export function prettifyArgsArray(src: string[]) {
   // TODO: escape

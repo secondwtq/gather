@@ -1,9 +1,5 @@
 
-import fs from "fs/promises";
-import { SerializedEventDesc, EventDesc } from "../Common.js";
-import { EventSet } from "../EventSet.js";
-import { load } from "../../PersistentStorage.js";
-import { storeKeyForCoreID } from "./MapFile.js";
+import { Domain } from "../../perf-event.js";
 
 export enum CoreID {
   SKL,
@@ -18,15 +14,13 @@ export enum CoreID {
   SPR,
 }
 
-const IntelEventSets = new Map<CoreID, EventSet>();
-
-export async function getOrLoadEventSet(coreID: CoreID) {
-  const cached = IntelEventSets.get(coreID);
-  if (cached)
-    return cached;
-
-  const serialized = await load<SerializedEventDesc[]>(storeKeyForCoreID(coreID));
-  const newEventSet = new EventSet(new Set(serialized));
-  IntelEventSets.set(coreID, newEventSet);
-  return newEventSet;
+export function coreIDToDomain(src: CoreID): Domain {
+  switch (src) {
+    case CoreID.ADL_GLC:
+      return Domain.CPUCore;
+    case CoreID.ADL_GRT:
+      return Domain.CPUAtom;
+    default:
+      return Domain.CPU;
+  }
 }

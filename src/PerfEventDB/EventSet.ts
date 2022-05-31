@@ -1,20 +1,15 @@
 
-import { SerializedEventDesc, EventDesc } from "./Common.js";
-import { Kind } from "../perf-event.js";
+import { PerfEvent } from "../perf-event.js";
 
 export class EventSet {
-  allEvents: Set<EventDesc>;
-  eventNameToDescMap: Map<string, EventDesc>;
+  allEvents: Set<PerfEvent>;
+  eventNameToDescMap: Map<string, PerfEvent>;
 
-  constructor(allEvents: Set<SerializedEventDesc>) {
-    this.allEvents = <Set<EventDesc>>allEvents;
+  constructor(allEvents: Set<PerfEvent>) {
+    this.allEvents = allEvents;
     this.eventNameToDescMap = new Map();
     for (const eventDesc of this.allEvents) {
-      eventDesc.namedEvent = {
-        kind: Kind.Named,
-        eventName: eventDesc.eventName,
-      }
-      this.eventNameToDescMap.set(eventDesc.eventName, eventDesc);
+      this.eventNameToDescMap.set(eventDesc.perfName, eventDesc);
     }
   }
 }

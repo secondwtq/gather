@@ -1,6 +1,6 @@
 
-import { updateDB } from "./MapFile.js";
-import { CoreID, getOrLoadEventSet } from "./Common.js";
+import { getOrLoadEventSet, updateDB } from "./MapFile.js";
+import { CoreID } from "./Common.js";
 
 (async () => {
   await updateDB();

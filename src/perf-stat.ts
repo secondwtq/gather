@@ -1,14 +1,20 @@
 
 import { execa } from "execa";
 import { log } from "./logger.js";
-import { PerfEvent, perfEventToEventSelector } from "./perf-event.js";
-import { prettifyArgsArray } from "./utils.js";
-import { hrtime } from "process";
+import { prettifyArgsArray, SampledValueOrdered } from "./utils.js";
 import Papa from "papaparse";
+import { Selector, selectorToPerfEventSelector } from "./perf-event.js";
+import Config from "./Config.js";
+
+interface PreprocessedEvent {
+  event: Selector;
+  eventSelectorStr: string;
+}
 
 export interface Params {
-  repetition?: number;
-  extraParams?: string[];
+  events: PreprocessedEvent[],
+  repetition: number;
+  extraParams: string[];
 }
 
 const defaultParams = {
@@ -16,18 +22,21 @@ const defaultParams = {
   extraParams: [],
 };
 
-export interface Result {
-  // in ms
-  time: number;
-  events: ResultEvent[];
-}
-
-export interface ResultEvent {
-  event: PerfEvent,
+export interface ResultEvent extends SampledValueOrdered {
+  event: Selector,
   // Note double value is not good for ints larger than Number.MAX_SAFE_INTEGER
   // which is about 9000 T
-  value: number,
-  stddev: number,
+}
+
+export function createParams(events: Selector[], opts: { repetition?: number, extraParams?: string[] } = { }): Params {
+  return {
+    events: events.map((event) => ({
+      event: event,
+      eventSelectorStr: selectorToPerfEventSelector(event),
+    })),
+    ...defaultParams,
+    ... opts,
+  };
 }
 
 // Output example:
@@ -41,24 +50,20 @@ export interface ResultEvent {
 // 7054000,,branch-misses,0.08%,318266377,100.00,2.73,of all branches
 export async function run(
     cmd: string[],
-    events: PerfEvent[],
-    params: Params = { }): Promise<Result> {
+    params: Params): Promise<ResultEvent[]> {
   const paramsCanon = { ... defaultParams, ... params };
-  const args = ["stat", "-x,", "-r", paramsCanon.repetition.toString(), ... paramsCanon.extraParams, "-e", events.map(perfEventToEventSelector).join(","), ... cmd];
-  log.info(`CMD perf ${prettifyArgsArray(args)}`);
-  const startTime = hrtime.bigint();
-  const exec = await execa("perf", args);
-  // TODO: this time is only an estimation
-  const timeDelta = Number((hrtime.bigint() - startTime) / BigInt(paramsCanon.repetition) / 1000n) / 1000.0;
-
-  // TODO: direct perf output to a file
-  const csvParseResult: Papa.ParseResult<any> = Papa.parse(exec.stderr);
-  return {
-    time: timeDelta,
-    events: csvParseResult.data.map((value: any, index) => ({
-      event: events[index],
-      value: parseInt(value[0]),
-      stddev: paramsCanon.repetition <= 1 ? 0 : parseFloat(value[3].slice(0, value[3].length - 1)),
-    }))
-  };
+  const args = ["stat", "-x,", ... paramsCanon.extraParams, "-e", params.events.map((event) => event.eventSelectorStr).join(","), ... cmd];
+  log.info(`CMD ${Config.linuxPerfPath} ${prettifyArgsArray(args)}`);
+  const results: number[][] = Array.from(new Array(params.events.length), () => []);
+  for (let i = 0; i < params.repetition; i++) {
+    // TODO: direct perf output to a file
+    const exec = await execa(Config.linuxPerfPath, args);
+    const csvParseResult: Papa.ParseResult<any> = Papa.parse(exec.stderr);
+    csvParseResult.data.forEach((data, index) =>
+      results[index].push(parseInt(data[0])));
+  }
+  return params.events.map((value: any, index) => ({
+      event: params.events[index].event,
+      rawValues: results[index],
+  }));
 }

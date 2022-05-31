@@ -1,25 +1,40 @@
 
-export enum Kind {
-  Named = "named",
+export interface RunParams {
+  eventCode?: number;
+  uMask?: number;
+  // Counter Mask
+  cMask?: number;
 }
 
-export interface PerfEventNamed {
-  kind: Kind.Named;
-  eventName: string;
+export interface RunConstraints {
+  counterSetLimit?: number[];
+  fixedCounter?: number;
 }
 
-export type PerfEvent = PerfEventNamed;
-
-export function perfEventToEventSelector(src: PerfEvent): string {
-  switch (src.kind) {
-    case Kind.Named:
-      return src.eventName;
-  }
+export enum Domain {
+  None = "",
+  CPU = "cpu",
+  CPUCore = "cpu_core",
+  CPUAtom = "cpu_atom",
 }
 
-export function perfEventToHumanName(src: PerfEvent): string {
-  switch (src.kind) {
-    case Kind.Named:
-      return src.eventName;
-  }
+export interface PerfEvent {
+  perfName: string;
+  domain: Domain;
+  runParams: RunParams;
+  runConstraints: RunConstraints;
+}
+
+export interface Selector {
+  event: PerfEvent;
+  annotations: string[];
+}
+
+export function selectorToPerfEventSelector(src: Selector): string {
+  const hasDomain = src.event.domain != Domain.None;
+  if (src.event.domain != Domain.None)
+    return src.event.domain + "/" + src.event.perfName + "/" + src.annotations.join("/");
+  else
+    return src.event.perfName + src.annotations.map((annotation) =>
+      ":" + annotation).join("");
 }

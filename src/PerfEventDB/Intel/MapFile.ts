@@ -4,8 +4,10 @@ import fetch from "node-fetch";
 import Papa from "papaparse";
 import { log } from "../../logger.js";
 import { enumValues } from "../../utils.js";
-import { CoreID } from "./Common.js";
-import { Key, store } from "../../PersistentStorage.js";
+import { CoreID, coreIDToDomain } from "./Common.js";
+import { Key, load, store } from "../../PersistentStorage.js";
+import { PerfEvent } from "../../perf-event.js";
+import { EventSet } from "../EventSet.js";
 
 interface EventSetDesc {
   ModelInMap: string;
@@ -94,6 +96,25 @@ export function storeKeyForCoreID(coreID: CoreID): Key {
   return `PerfEventSet.Intel.${CoreID[coreID]}.0`;
 }
 
+function processEventDesc(eventDescRaw: EventDescRaw) {
+  const ret: any = {
+    perfName: eventDescRaw.EventName,
+    runParams: {
+      eventCode: parseInt(eventDescRaw.EventCode),
+      uMask: parseInt(eventDescRaw.UMask),
+      cMask: parseInt(eventDescRaw.CounterMask),
+    },
+    runConstraints: { },
+  };
+  const counters = eventDescRaw.Counter.split(",").map((str) => parseInt(str));
+  if (counters[0] >= 32) {
+    ret.runConstraints.fixedCounter = counters[0] - 32;
+  } else {
+    ret.runConstraints.counterSetLimit = counters;
+  }
+  return ret;
+}
+
 export async function updateDB(coreIDs: CoreID[] = Array.from(enumValues(CoreID))) {
   const MAP_FILE_URL = PERFMON_URL_ROOT + MAP_FILE_PATH;
   log.info(`Fetching mapfile for ${MAP_FILE_PATH}`);
@@ -109,13 +130,25 @@ export async function updateDB(coreIDs: CoreID[] = Array.from(enumValues(CoreID)
 
   for (const coreID of coreIDs) {
     const coreEventURL = coreEventURLs.get(coreID)!;
+    const domain = coreIDToDomain(coreID);
     log.info(`Fetching event data for ${CoreID[coreID]} from ${coreEventURL}`);
     const raw = await (await fetch(coreEventURL)).json() as EventDescRaw[];
     log.info(`Event data for ${CoreID[coreID]} fetched`);
-    const serialized = raw.map((eventDescRaw) => ({
-      eventName: eventDescRaw.EventName,
-      description: eventDescRaw.BriefDescription,
-    }));
+    const serialized: PerfEvent[] = raw.map((eventDesc) => ({
+      ... processEventDesc(eventDesc), domain: domain }));
     await store(storeKeyForCoreID(coreID), serialized);
   }
+}
+
+const IntelEventSets = new Map<CoreID, EventSet>();
+
+export async function getOrLoadEventSet(coreID: CoreID) {
+  const cached = IntelEventSets.get(coreID);
+  if (cached)
+    return cached;
+
+  const serialized = await load<PerfEvent[]>(storeKeyForCoreID(coreID));
+  const newEventSet = new EventSet(new Set(serialized));
+  IntelEventSets.set(coreID, newEventSet);
+  return newEventSet;
 }
